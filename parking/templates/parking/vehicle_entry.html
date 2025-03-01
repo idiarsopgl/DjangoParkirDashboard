@@ -1,0 +1,471 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Camera Preview Card -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-camera"></i> Kamera
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="camera-container">
+                        <div id="camera-preview" class="camera-preview mb-3">
+                            <!-- Camera feed will be shown here -->
+                            <video id="video" autoplay playsinline style="width: 100%; height: 100%;"></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                        </div>
+                        <div class="text-center">
+                            <button class="btn btn-primary btn-lg" id="captureBtn" onclick="captureImage()">
+                                <i class="fas fa-camera"></i> Ambil Foto
+                            </button>
+                            <button class="btn btn-secondary btn-lg ml-2" id="retakeBtn" style="display: none;" onclick="retakePhoto()">
+                                <i class="fas fa-redo"></i> Ambil Ulang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Details Card -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-car"></i> Detail Kendaraan
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="entryForm" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Hidden field for image data -->
+                        <input type="hidden" id="imageData" name="vehicle_image">
+                        
+                        <!-- Vehicle Type -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-car-side"></i> Jenis Kendaraan</label>
+                            <select class="form-select form-select-lg" name="vehicle_type" required>
+                                <option value="">-- Pilih Jenis Kendaraan --</option>
+                                <option value="CAR">Mobil</option>
+                                <option value="MOTORCYCLE">Motor</option>
+                                <option value="TRUCK">Truk</option>
+                            </select>
+                        </div>
+
+                        <!-- License Plate -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-id-card"></i> Plat Nomor</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-lg" id="license_plate" name="license_plate" 
+                                       placeholder="Contoh: B 1234 ABC" required>
+                                <button class="btn btn-outline-secondary" type="button" id="detectPlateBtn" style="display: none;">
+                                    <i class="fas fa-magic"></i> Deteksi
+                                </button>
+                                <span class="input-group-text" id="plateDetectingSpinner" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Vehicle Color -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-palette"></i> Warna Kendaraan</label>
+                            <input type="text" class="form-control form-control-lg" name="color" 
+                                   placeholder="Contoh: Hitam" required>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-sticky-note"></i> Catatan</label>
+                            <textarea class="form-control" name="notes" rows="2" 
+                                    placeholder="Catatan tambahan (opsional)"></textarea>
+                        </div>
+
+                        <!-- Current Time -->
+                        <div class="mb-4">
+                            <label class="form-label"><i class="fas fa-clock"></i> Waktu Masuk</label>
+                            <div class="form-control form-control-lg bg-light">
+                                <span id="currentTime"></span>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                                <i class="fas fa-check-circle"></i> Catat Kendaraan Masuk
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Available Slots Card -->
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-parking"></i> Slot Tersedia
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6>Mobil</h6>
+                                    <h3 id="carSlots">{{ available_slots.car }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6>Motor</h6>
+                                    <h3 id="motorcycleSlots">{{ available_slots.motorcycle }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6>Truk</h6>
+                                    <h3 id="truckSlots">{{ available_slots.truck }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle"></i> Berhasil
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <h4>Kendaraan berhasil dicatat!</h4>
+                <p class="mb-0">Nomor Tiket: <strong id="ticketNumber"></strong></p>
+                <p>Waktu Masuk: <strong id="entryTime"></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="printTicket()">
+                    <i class="fas fa-print"></i> Cetak Tiket
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.camera-preview {
+    width: 100%;
+    height: 480px;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.camera-container {
+    padding: 20px;
+}
+
+.form-control-lg, .form-select-lg {
+    font-size: 1.1rem;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+
+.ml-2 {
+    margin-left: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    document.getElementById('currentTime').textContent = now.toLocaleDateString('id-ID', options);
+}
+
+// Update time every second
+setInterval(updateTime, 1000);
+updateTime();
+
+// Camera variables
+let videoElement = document.getElementById('video');
+let canvasElement = document.getElementById('canvas');
+let captureBtn = document.getElementById('captureBtn');
+let retakeBtn = document.getElementById('retakeBtn');
+let detectPlateBtn = document.getElementById('detectPlateBtn');
+let submitBtn = document.getElementById('submitBtn');
+let stream = null;
+let photoTaken = false;
+
+// Initialize camera
+async function initCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'environment' 
+            }, 
+            audio: false 
+        });
+        videoElement.srcObject = stream;
+        
+        console.log('Camera initialized successfully');
+    } catch (err) {
+        console.error('Error initializing camera:', err);
+        alert('Gagal mengakses kamera. Pastikan kamera Anda terhubung dan telah memberikan izin.');
+    }
+}
+
+// Initialize camera when page loads
+document.addEventListener('DOMContentLoaded', initCamera);
+
+// Capture image function
+function captureImage() {
+    if (!stream) {
+        alert('Kamera belum siap. Tunggu sebentar.');
+        return;
+    }
+    
+    // Set canvas dimensions to match video
+    canvasElement.width = videoElement.videoWidth;
+    canvasElement.height = videoElement.videoHeight;
+    
+    // Draw the video frame to the canvas
+    const context = canvasElement.getContext('2d');
+    context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+    
+    // Convert canvas to image data URL
+    const imageDataUrl = canvasElement.toDataURL('image/jpeg', 0.9);
+    
+    // Display the captured image
+    videoElement.style.display = 'none';
+    canvasElement.style.display = 'block';
+    
+    // Store image data in form
+    document.getElementById('imageData').value = imageDataUrl;
+    
+    // Update UI
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-block';
+    detectPlateBtn.style.display = 'inline-block';
+    submitBtn.disabled = false;
+    
+    photoTaken = true;
+    
+    console.log('Photo captured');
+    
+    // Automatically detect license plate
+    detectLicensePlate(imageDataUrl);
+}
+
+// License plate detection
+function detectLicensePlate(imageDataUrl) {
+    // Show detecting spinner
+    document.getElementById('plateDetectingSpinner').style.display = 'inline-block';
+    document.getElementById('detectPlateBtn').style.display = 'none';
+    
+    // Convert data URL to blob
+    const byteString = atob(imageDataUrl.split(',')[1]);
+    const mimeString = imageDataUrl.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    
+    const blob = new Blob([ab], {type: mimeString});
+    
+    // Create FormData and append image
+    const formData = new FormData();
+    formData.append('detect_only', 'true');
+    formData.append('vehicle_image', blob, 'vehicle.jpg');
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Send to server for plate detection
+    fetch('{% url "parking:vehicle_entry" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide detecting spinner
+        document.getElementById('plateDetectingSpinner').style.display = 'none';
+        document.getElementById('detectPlateBtn').style.display = 'inline-block';
+        
+        if (data.plate_number) {
+            // Fill the license plate field
+            document.getElementById('license_plate').value = data.plate_number;
+            console.log('Plate number detected:', data.plate_number);
+        } else {
+            console.error('Plate detection failed:', data.error);
+            alert('Deteksi plat nomor gagal: ' + (data.error || 'Tidak dapat mendeteksi plat nomor'));
+        }
+    })
+    .catch(error => {
+        // Hide detecting spinner
+        document.getElementById('plateDetectingSpinner').style.display = 'none';
+        document.getElementById('detectPlateBtn').style.display = 'inline-block';
+        
+        console.error('Error detecting plate:', error);
+        alert('Terjadi kesalahan saat mendeteksi plat nomor. Silakan coba lagi.');
+    });
+}
+
+// Manual detection button click
+document.getElementById('detectPlateBtn').addEventListener('click', function() {
+    const imageDataUrl = document.getElementById('imageData').value;
+    if (imageDataUrl) {
+        detectLicensePlate(imageDataUrl);
+    } else {
+        alert('Harap ambil foto kendaraan terlebih dahulu.');
+    }
+});
+
+// Retake photo
+function retakePhoto() {
+    // Show video stream again
+    videoElement.style.display = 'block';
+    canvasElement.style.display = 'none';
+    
+    // Update UI
+    captureBtn.style.display = 'inline-block';
+    retakeBtn.style.display = 'none';
+    detectPlateBtn.style.display = 'none';
+    submitBtn.disabled = true;
+    
+    // Clear image data
+    document.getElementById('imageData').value = '';
+    
+    photoTaken = false;
+    
+    console.log('Camera reset for new photo');
+}
+
+function printTicket() {
+    // Implement ticket printing logic here
+    window.print();
+}
+
+// Form submission
+document.getElementById('entryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!photoTaken) {
+        alert('Harap ambil foto kendaraan terlebih dahulu.');
+        return;
+    }
+    
+    // Create form data for submission
+    const formData = new FormData(this);
+    
+    // Convert data URL to blob for sending
+    const imageDataUrl = document.getElementById('imageData').value;
+    if (imageDataUrl) {
+        // Convert base64 to blob
+        const byteString = atob(imageDataUrl.split(',')[1]);
+        const mimeString = imageDataUrl.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([ab], {type: mimeString});
+        formData.set('vehicle_image', blob, 'vehicle.jpg');
+    }
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Send data to server
+    fetch('{% url "parking:vehicle_entry" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success modal
+            document.getElementById('ticketNumber').textContent = data.parking_id;
+            document.getElementById('entryTime').textContent = new Date().toLocaleString('id-ID');
+            
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+            
+            // Reset form and camera
+            document.getElementById('entryForm').reset();
+            retakePhoto();
+        } else {
+            alert('Error: ' + (data.error || 'Terjadi kesalahan saat memproses data.'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengirim data. Silakan coba lagi.');
+    });
+});
+</script>
+{% endblock %}

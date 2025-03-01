@@ -1,0 +1,224 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <i class="fas fa-parking fa-3x"></i>
+                        </div>
+                        <div class="col">
+                            <h4 class="mb-0">Selamat Datang di Sistem Parkir</h4>
+                            <p class="mb-0">{{ current_time|date:"l, d F Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <!-- Available Slots -->
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Slot Tersedia</h6>
+                            <h2 class="mb-0">{{ available_slots|stringformat:"d" }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-car-side fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Occupied Slots -->
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Slot Terpakai</h6>
+                            <h2 class="mb-0">{{ occupied_slots|stringformat:"d" }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-car fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Income -->
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Pendapatan Hari Ini</h6>
+                            <h2 class="mb-0">Rp {{ today_income|stringformat:",.0f"|safe }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-money-bill-wave fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Vehicles -->
+        <div class="col-md-3">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Total Kendaraan</h6>
+                            <h2 class="mb-0">{{ total_vehicles|stringformat:"d" }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-cars fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Menu Widgets -->
+    <div class="row">
+        {% for menu in menus %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas {{ menu.icon }} fa-4x {{ menu.color }}"></i>
+                    </div>
+                    <h5 class="card-title">{{ menu.title }}</h5>
+                    <p class="card-text">{{ menu.description }}</p>
+                    <a href="{% url menu.url %}" class="btn {{ menu.button_color }}">
+                        <i class="fas fa-arrow-right"></i> {{ menu.button_text }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock"></i> Aktivitas Terbaru
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>No. Plat</th>
+                                    <th>Jenis</th>
+                                    <th>Status</th>
+                                    <th>Biaya</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td>{{ activity.timestamp|date:"H:i" }}</td>
+                                    <td>{{ activity.license_plate }}</td>
+                                    <td>{{ activity.vehicle_type }}</td>
+                                    <td>
+                                        {% if activity.status == 'entry' %}
+                                        <span class="badge bg-success">Masuk</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Keluar</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ activity.fee|default:"-"|stringformat:",.0f"|safe }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">Belum ada aktivitas</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.fa-4x {
+    margin-bottom: 1rem;
+}
+
+.btn {
+    border-radius: 50px;
+    padding: 0.5rem 1.5rem;
+}
+
+.table th {
+    border-top: none;
+}
+
+.badge {
+    padding: 0.5em 1em;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    document.getElementById('currentTime').textContent = now.toLocaleDateString('id-ID', options);
+}
+
+// Update time every second
+setInterval(updateTime, 1000);
+updateTime();
+</script>
+{% endblock %}

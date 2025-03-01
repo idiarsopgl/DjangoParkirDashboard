@@ -1,0 +1,132 @@
+{% extends 'parking/base_auth.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 col-xl-5">
+            <div class="text-center mb-4">
+                <h4 class="text-primary mb-2">Sistem Manajemen Parkir</h4>
+                <p class="text-muted">RSI Banjarnegara</p>
+            </div>
+            <div class="card">
+                <div class="card-body p-4">
+                    <div class="text-center mt-2">
+                        <h5 class="text-primary">Selamat Datang! 👋</h5>
+                        <p class="text-muted">Silakan masuk untuk melanjutkan ke Sistem Parkir.</p>
+                    </div>
+                    <div class="p-2 mt-4">
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                Username atau password salah. Silakan coba lagi.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            {% endif %}
+
+                            {% if next %}
+                                {% if user.is_authenticated %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Anda tidak memiliki akses ke halaman tersebut. Silakan login dengan akun yang memiliki akses.
+                                </div>
+                                {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Silakan login terlebih dahulu untuk mengakses halaman tersebut.
+                                </div>
+                                {% endif %}
+                            {% endif %}
+
+                            <div class="mb-4">
+                                <label class="form-label">Username</label>
+                                <div class="input-group input-group-lg bg-light rounded-3">
+                                    <span class="input-group-text bg-transparent border-0">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </span>
+                                    <input type="text" class="form-control form-control-lg bg-transparent border-0" 
+                                           name="username" placeholder="Masukkan username" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Password</label>
+                                <div class="input-group input-group-lg bg-light rounded-3">
+                                    <span class="input-group-text bg-transparent border-0">
+                                        <i class="fas fa-lock text-primary"></i>
+                                    </span>
+                                    <input type="password" class="form-control form-control-lg bg-transparent border-0" 
+                                           name="password" placeholder="Masukkan password" required>
+                                    <button class="btn btn-link text-muted border-0 bg-transparent" type="button" 
+                                            onclick="togglePassword(this)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="remember-check">
+                                        <label class="form-check-label" for="remember-check">
+                                            Ingat saya
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="{% url 'password_change' %}" class="text-primary">Lupa password?</a>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <button class="btn btn-primary btn-lg w-100 waves-effect waves-light" type="submit">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Masuk
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <p class="mb-0 text-muted"> {% now "Y" %} RSI Banjarnegara. Crafted with <i class="fas fa-heart text-danger"></i></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function togglePassword(button) {
+    const input = button.parentElement.querySelector('input[type="password"]');
+    const icon = button.querySelector('i');
+    
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+    } else {
+        input.type = "password";
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
+    }
+}
+
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %}
+{% endblock %}

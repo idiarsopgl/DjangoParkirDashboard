@@ -1,0 +1,213 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Performance Metrics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-sm-6 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Pendapatan</p>
+                                <h5 class="font-weight-bolder">{{ performance_metrics.total_revenue_formatted }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
+                                <i class="fas fa-money-bill text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Kendaraan</p>
+                                <h5 class="font-weight-bolder">{{ performance_metrics.total_vehicles }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
+                                <i class="fas fa-car text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Tingkat Okupansi</p>
+                                <h5 class="font-weight-bolder">{{ performance_metrics.occupancy_rate }}%</h5>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
+                                <i class="fas fa-percent text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Rata-rata Durasi</p>
+                                <h5 class="font-weight-bolder">{{ performance_metrics.avg_duration }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-danger shadow-danger text-center rounded-circle">
+                                <i class="fas fa-clock text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Monthly Revenue Chart -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Pendapatan Bulanan {{ current_year }}</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyRevenueChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Distribution Chart -->
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Distribusi Jenis Kendaraan</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="vehicleDistributionChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Transaksi Terbaru</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table align-items-center mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Waktu</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Plat Nomor</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Durasi</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Biaya</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                <tr>
+                                    <td>{{ transaction.date|date:"H:i" }}</td>
+                                    <td>{{ transaction.plate }}</td>
+                                    <td>{{ transaction.duration }}</td>
+                                    <td>{{ transaction.amount_formatted }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Monthly Revenue Chart
+    const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+    new Chart(monthlyRevenueCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Pendapatan (Rp)',
+                data: {{ monthly_revenue }},
+                borderColor: '#5e72e4',
+                tension: 0.4,
+                fill: true,
+                backgroundColor: 'rgba(94, 114, 228, 0.1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rp ' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Vehicle Distribution Chart
+    const vehicleDistributionCtx = document.getElementById('vehicleDistributionChart').getContext('2d');
+    new Chart(vehicleDistributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys({{ vehicle_distribution|safe }}),
+            datasets: [{
+                data: Object.values({{ vehicle_distribution|safe }}),
+                backgroundColor: [
+                    '#5e72e4',
+                    '#2dce89',
+                    '#fb6340'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

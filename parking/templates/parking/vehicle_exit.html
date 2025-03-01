@@ -1,0 +1,307 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Search and Camera Section -->
+        <div class="col-md-8">
+            <!-- Search Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search"></i> Cari Kendaraan
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="searchForm" class="mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="fas fa-ticket-alt"></i> Nomor Tiket</label>
+                                <input type="text" class="form-control form-control-lg" id="ticketNumber" 
+                                       placeholder="Masukkan nomor tiket">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="fas fa-id-card"></i> Plat Nomor</label>
+                                <input type="text" class="form-control form-control-lg" id="licensePlate" 
+                                       placeholder="Contoh: B 1234 ABC">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Camera Card -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-camera"></i> Verifikasi Kamera
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="camera-container">
+                                <h6 class="text-center mb-2">Foto Masuk</h6>
+                                <div class="camera-preview entry-photo mb-3">
+                                    <!-- Entry photo will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="camera-container">
+                                <h6 class="text-center mb-2">Foto Keluar</h6>
+                                <div class="camera-preview exit-photo mb-3">
+                                    <!-- Exit camera feed will be shown here -->
+                                </div>
+                                <div class="text-center">
+                                    <button class="btn btn-info btn-lg" onclick="captureExitPhoto()">
+                                        <i class="fas fa-camera"></i> Ambil Foto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Details and Payment Section -->
+        <div class="col-md-4">
+            <!-- Vehicle Details Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-car"></i> Detail Kendaraan
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="vehicle-details">
+                        <table class="table">
+                            <tr>
+                                <th><i class="fas fa-car-side"></i> Jenis</th>
+                                <td id="vehicleType">-</td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-id-card"></i> Plat</th>
+                                <td id="plateNumber">-</td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-clock"></i> Masuk</th>
+                                <td id="entryTime">-</td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-clock"></i> Keluar</th>
+                                <td id="exitTime">-</td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-hourglass-half"></i> Durasi</th>
+                                <td id="duration">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Card -->
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-money-bill"></i> Pembayaran
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="paymentForm">
+                        <!-- Parking Fee -->
+                        <div class="mb-3">
+                            <label class="form-label">Biaya Parkir</label>
+                            <div class="form-control form-control-lg bg-light">
+                                <span id="parkingFee">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div class="mb-3">
+                            <label class="form-label">Metode Pembayaran</label>
+                            <select class="form-select form-select-lg" id="paymentMethod">
+                                <option value="CASH">Tunai</option>
+                                <option value="QRIS">QRIS</option>
+                                <option value="CARD">Kartu Debit/Kredit</option>
+                            </select>
+                        </div>
+
+                        <!-- Amount Paid -->
+                        <div class="mb-3">
+                            <label class="form-label">Jumlah Dibayar</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">Rp</span>
+                                <input type="number" class="form-control" id="amountPaid">
+                            </div>
+                        </div>
+
+                        <!-- Change -->
+                        <div class="mb-4">
+                            <label class="form-label">Kembalian</label>
+                            <div class="form-control form-control-lg bg-light">
+                                <span id="change">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <!-- Process Payment Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-check-circle"></i> Proses Pembayaran
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle"></i> Pembayaran Berhasil
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <h4>Terima kasih!</h4>
+                <p class="mb-0">Nomor Transaksi: <strong id="transactionId"></strong></p>
+                <p>Total Dibayar: <strong id="totalPaid"></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="printReceipt()">
+                    <i class="fas fa-print"></i> Cetak Struk
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.camera-preview {
+    width: 100%;
+    height: 320px;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.camera-container {
+    padding: 15px;
+}
+
+.form-control-lg, .form-select-lg {
+    font-size: 1.1rem;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 1.1rem;
+}
+
+.table th {
+    width: 35%;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Update current time
+function updateExitTime() {
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    };
+    document.getElementById('exitTime').textContent = now.toLocaleDateString('id-ID', options);
+}
+
+// Update time every second
+setInterval(updateExitTime, 1000);
+updateExitTime();
+
+// Search form submission
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Here you would normally fetch vehicle data from the server
+    // For demo, we'll just show some sample data
+    document.getElementById('vehicleType').textContent = 'Mobil';
+    document.getElementById('plateNumber').textContent = 'B 1234 ABC';
+    document.getElementById('entryTime').textContent = '5 Februari 2025, 14:30:00';
+    document.getElementById('duration').textContent = '2 jam 30 menit';
+    document.getElementById('parkingFee').textContent = 'Rp 15.000';
+});
+
+// Calculate change
+document.getElementById('amountPaid').addEventListener('input', function(e) {
+    const parkingFee = 15000; // This should come from the server
+    const amountPaid = parseInt(e.target.value) || 0;
+    const change = amountPaid - parkingFee;
+    document.getElementById('change').textContent = `Rp ${change.toLocaleString('id-ID')}`;
+});
+
+// Camera functions
+function captureExitPhoto() {
+    // Implement camera capture logic here
+    alert('Foto berhasil diambil!');
+}
+
+// Payment form submission
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Here you would normally process the payment on the server
+    // For demo, we'll just show the success modal
+    const transactionId = 'T' + Math.random().toString().substr(2, 6);
+    const amountPaid = document.getElementById('amountPaid').value;
+    
+    document.getElementById('transactionId').textContent = transactionId;
+    document.getElementById('totalPaid').textContent = `Rp ${parseInt(amountPaid).toLocaleString('id-ID')}`;
+    
+    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+    successModal.show();
+});
+
+function printReceipt() {
+    // Implement receipt printing logic here
+    window.print();
+}
+</script>
+{% endblock %}

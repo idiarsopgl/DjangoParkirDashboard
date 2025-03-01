@@ -1,0 +1,126 @@
+{% extends 'parking/base.html' %}
+
+{% block title %}Manage Slots - Parking Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Add New Slot Form -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Add New Parking Slot</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Slot Number</label>
+                            <input type="text" class="form-control" name="slot_number" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Slot Type</label>
+                            <select class="form-select" name="slot_type" required>
+                                <option value="CAR">Car</option>
+                                <option value="MOTORCYCLE">Motorcycle</option>
+                                <option value="TRUCK">Truck</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Slot
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slots Overview -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">Parking Slots Overview</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary active" data-filter="all">All</button>
+                                <button type="button" class="btn btn-outline-secondary" data-filter="CAR">Cars</button>
+                                <button type="button" class="btn btn-outline-secondary" data-filter="MOTORCYCLE">Motorcycles</button>
+                                <button type="button" class="btn btn-outline-secondary" data-filter="TRUCK">Trucks</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="slotsGrid">
+                        {% for slot in slots %}
+                        <div class="col-md-4 mb-3 slot-item" data-type="{{ slot.slot_type }}">
+                            <div class="card {% if slot.is_occupied %}bg-light{% endif %}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">{{ slot.slot_number }}</h5>
+                                        <span class="badge {% if slot.is_occupied %}bg-danger{% else %}bg-success{% endif %}">
+                                            {{ slot.is_occupied|yesno:"Occupied,Available" }}
+                                        </span>
+                                    </div>
+                                    <p class="card-text">
+                                        <small class="text-muted">Type: {{ slot.get_slot_type_display }}</small>
+                                    </p>
+                                    {% if slot.current_vehicle %}
+                                    <p class="card-text">
+                                        <small class="text-muted">
+                                            Current Vehicle: {{ slot.current_vehicle.plate_number }}
+                                        </small>
+                                    </p>
+                                    {% endif %}
+                                    {% if not slot.is_occupied %}
+                                    <form method="post" class="mt-2">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="slot_id" value="{{ slot.id }}">
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                No parking slots defined yet. Use the form on the left to add slots.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Filter slots by type
+        $('.btn-group button').click(function() {
+            $(this).addClass('active').siblings().removeClass('active');
+            var filterValue = $(this).data('filter');
+            
+            if (filterValue === 'all') {
+                $('.slot-item').show();
+            } else {
+                $('.slot-item').hide();
+                $('.slot-item[data-type="' + filterValue + '"]').show();
+            }
+        });
+    });
+</script>
+{% endblock %}

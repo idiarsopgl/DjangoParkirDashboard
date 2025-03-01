@@ -1,0 +1,33 @@
+{% extends 'parking/base_auth.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 col-xl-5">
+            <div class="text-center mb-4">
+                <h4 class="text-primary mb-2">Sistem Manajemen Parkir</h4>
+                <p class="text-muted">RSI Banjarnegara</p>
+            </div>
+            <div class="card animate__animated animate__fadeIn">
+                <div class="card-body p-4">
+                    <div class="text-center mt-2">
+                        <div class="mb-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="text-primary">Berhasil Keluar</h5>
+                        <p class="text-muted">Anda telah berhasil keluar dari sistem. Terima kasih telah menggunakan Sistem Manajemen Parkir RSI Banjarnegara.</p>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <a href="{% url 'login' %}" class="btn btn-primary btn-lg waves-effect waves-light">
+                            <i class="fas fa-sign-in-alt me-2"></i>Masuk Kembali
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <p class="mb-0 text-muted"> {% now "Y" %} RSI Banjarnegara. Crafted with <i class="fas fa-heart text-danger"></i></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

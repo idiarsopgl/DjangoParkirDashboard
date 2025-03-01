@@ -1,0 +1,225 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Manage Shifts</h3>
+                    <button type="button" class="btn btn-primary float-end" data-bs-toggle="modal" data-bs-target="#addShiftModal">
+                        <i class="fas fa-plus"></i> Add New Shift
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label for="dateFilter" class="form-label">Filter by Date</label>
+                                <input type="date" class="form-control" id="dateFilter" onchange="filterShifts()">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="operatorFilter" class="form-label">Filter by Operator</label>
+                                <select class="form-control" id="operatorFilter" onchange="filterShifts()">
+                                    <option value="">All Operators</option>
+                                    {% for operator in operators %}
+                                    <option value="{{ operator.id }}">{{ operator.user.get_full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Shift</th>
+                                    <th>Operator</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for shift in shifts %}
+                                <tr>
+                                    <td>{{ shift.date }}</td>
+                                    <td>{{ shift.get_shift_type_display }}</td>
+                                    <td>{{ shift.operator.user.get_full_name }}</td>
+                                    <td>{{ shift.start_time }} - {{ shift.end_time }}</td>
+                                    <td>
+                                        {% if shift.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="editShift('{{ shift.id }}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteShift('{{ shift.id }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% if shift.shiftlog %}
+                                        <button class="btn btn-sm btn-success" onclick="viewShiftLog('{{ shift.id }}')">
+                                            <i class="fas fa-file-alt"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Shift Modal -->
+<div class="modal fade" id="addShiftModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addShiftForm" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="operator" class="form-label">Operator</label>
+                        <select class="form-control" id="operator" name="operator" required>
+                            {% for operator in operators %}
+                            <option value="{{ operator.id }}">{{ operator.user.get_full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shift_type" class="form-label">Shift Type</label>
+                        <select class="form-control" id="shift_type" name="shift_type" required>
+                            <option value="pagi">Pagi (06:00-14:00)</option>
+                            <option value="siang">Siang (14:00-22:00)</option>
+                            <option value="malam">Malam (22:00-06:00)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="submitShiftForm()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shift Log Modal -->
+<div class="modal fade" id="shiftLogModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Shift Log Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Check In:</strong> <span id="checkInTime"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Check Out:</strong> <span id="checkOutTime"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Total Transactions:</strong> <span id="totalTransactions"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Total Revenue:</strong> <span id="totalRevenue"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Notes:</strong>
+                    <p id="shiftNotes"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterShifts() {
+    const date = document.getElementById('dateFilter').value;
+    const operator = document.getElementById('operatorFilter').value;
+    
+    window.location.href = `/shifts/?date=${date}&operator=${operator}`;
+}
+
+function editShift(shiftId) {
+    fetch(`/api/shifts/${shiftId}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('operator').value = data.operator;
+            document.getElementById('shift_type').value = data.shift_type;
+            document.getElementById('date').value = data.date;
+            
+            $('#addShiftModal').modal('show');
+        });
+}
+
+function deleteShift(shiftId) {
+    if (confirm('Are you sure you want to delete this shift?')) {
+        fetch(`/api/shifts/${shiftId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        }).then(() => {
+            window.location.reload();
+        });
+    }
+}
+
+function viewShiftLog(shiftId) {
+    fetch(`/api/shifts/${shiftId}/log/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('checkInTime').textContent = data.check_in;
+            document.getElementById('checkOutTime').textContent = data.check_out;
+            document.getElementById('totalTransactions').textContent = data.total_transactions;
+            document.getElementById('totalRevenue').textContent = 
+                new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' })
+                    .format(data.total_revenue);
+            document.getElementById('shiftNotes').textContent = data.notes;
+            
+            $('#shiftLogModal').modal('show');
+        });
+}
+
+function submitShiftForm() {
+    const form = document.getElementById('addShiftForm');
+    const formData = new FormData(form);
+    
+    fetch('/api/shifts/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    }).then(response => {
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Error saving shift');
+        }
+    });
+}
+</script>
+{% endblock %}

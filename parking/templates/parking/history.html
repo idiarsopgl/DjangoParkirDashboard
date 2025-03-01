@@ -1,0 +1,115 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+{% load parking_extras %}
+
+{% block title %}Riwayat Parkir{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-flex align-items-center justify-content-between">
+                <h4 class="mb-0">Riwayat Parkir</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-centered table-nowrap mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No. Plat</th>
+                                    <th>Slot</th>
+                                    <th>Waktu Masuk</th>
+                                    <th>Waktu Keluar</th>
+                                    <th>Durasi</th>
+                                    <th>Biaya</th>
+                                    <th>Status</th>
+                                    <th>Kecocokan Gambar</th>
+                                    <th>Operator</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in records %}
+                                <tr>
+                                    <td>
+                                        <h5 class="font-size-14 mb-1">{{ record.vehicle.plate_number }}</h5>
+                                        <p class="text-muted mb-0">{{ record.vehicle.get_vehicle_type_display }}</p>
+                                    </td>
+                                    <td>{{ record.parking_slot.slot_number }}</td>
+                                    <td>
+                                        {{ record.entry_time|date:"d/m/Y H:i" }}
+                                        <br>
+                                        <small class="text-muted">{{ record.entry_time|time_since }}</small>
+                                    </td>
+                                    <td>
+                                        {% if record.exit_time %}
+                                            {{ record.exit_time|date:"d/m/Y H:i" }}
+                                            <br>
+                                            <small class="text-muted">{{ record.exit_time|time_since }}</small>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.duration %}
+                                            {{ record.duration|duration }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.fee|currency_idr }}</td>
+                                    <td>
+                                        {% get_vehicle_status record as status %}
+                                        <span class="badge {{ status.class }}">{{ status.text }}</span>
+                                    </td>
+                                    <td>
+                                        {% if record.image_match_score %}
+                                            <div class="progress">
+                                                <div class="progress-bar {% if record.image_match_score >= 0.7 %}bg-success{% elif record.image_match_score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %}"
+                                                     role="progressbar"
+                                                     style="width: {% widthratio record.image_match_score 1 100 %}%"
+                                                     aria-valuenow="{% widthratio record.image_match_score 1 100 %}"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100">
+                                                    {% widthratio record.image_match_score 1 100 %}%
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.operator.get_full_name|default:record.operator.username }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center">Tidak ada data parkir</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Search functionality
+        $("#searchInput").on("keyup", function() {
+            var value = $(this).val().toLowerCase();
+            $("#historyTable tbody tr").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+    });
+</script>
+{% endblock %}
