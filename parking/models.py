@@ -169,6 +169,28 @@ class Language(models.Model):
         verbose_name = 'Bahasa'
         verbose_name_plural = 'Bahasa'
 
+class VehicleEntry(models.Model):
+    """Model for recording vehicle entries into the parking area."""
+    VEHICLE_TYPES = [
+        ('MOTOR', 'Motor'),
+        ('MOBIL', 'Mobil'),
+        ('TRUK', 'Truk'),
+    ]
+    
+    plate_number = models.CharField(max_length=20, verbose_name="Plat Nomor")
+    vehicle_type = models.CharField(max_length=10, choices=VEHICLE_TYPES, default='MOTOR', verbose_name="Jenis Kendaraan")
+    color = models.CharField(max_length=50, verbose_name="Warna Kendaraan")
+    entry_time = models.DateTimeField(default=timezone.now, verbose_name="Waktu Masuk")
+    notes = models.TextField(blank=True, null=True, verbose_name="Catatan")
+    qr_code = models.CharField(max_length=255, blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.plate_number} - {self.entry_time.strftime('%Y-%m-%d %H:%M')}"
+    
+    class Meta:
+        verbose_name = "Kendaraan Masuk"
+        verbose_name_plural = "Kendaraan Masuk"
+
 class BackupHistory(models.Model):
     BACKUP_TYPES = [
         ('MANUAL', 'Manual Backup'),

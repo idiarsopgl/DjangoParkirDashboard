@@ -45,16 +45,16 @@
                         {% csrf_token %}
                         
                         <!-- Hidden field for image data -->
-                        <input type="hidden" id="imageData" name="vehicle_image">
+                        <input type="hidden" id="imageData" name="plate_image">
                         
                         <!-- Vehicle Type -->
                         <div class="mb-3">
                             <label class="form-label"><i class="fas fa-car-side"></i> Jenis Kendaraan</label>
                             <select class="form-select form-select-lg" name="vehicle_type" required>
                                 <option value="">-- Pilih Jenis Kendaraan --</option>
-                                <option value="CAR">Mobil</option>
-                                <option value="MOTORCYCLE">Motor</option>
-                                <option value="TRUCK">Truk</option>
+                                <option value="MOTOR">Motor</option>
+                                <option value="MOBIL">Mobil</option>
+                                <option value="TRUK">Truk</option>
                             </select>
                         </div>
 
@@ -62,7 +62,7 @@
                         <div class="mb-3">
                             <label class="form-label"><i class="fas fa-id-card"></i> Plat Nomor</label>
                             <div class="input-group">
-                                <input type="text" class="form-control form-control-lg" id="license_plate" name="license_plate" 
+                                <input type="text" class="form-control form-control-lg" id="license_plate" name="plate_number" 
                                        placeholder="Contoh: B 1234 ABC" required>
                                 <button class="btn btn-outline-secondary" type="button" id="detectPlateBtn" style="display: none;">
                                     <i class="fas fa-magic"></i> Deteksi
@@ -97,7 +97,7 @@
 
                         <!-- Submit Button -->
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
                                 <i class="fas fa-check-circle"></i> Catat Kendaraan Masuk
                             </button>
                         </div>
@@ -218,7 +218,7 @@
 
 {% block extra_js %}
 <script>
-// Update current time
+// Update current time display
 function updateTime() {
     const now = new Date();
     const options = { 
@@ -230,242 +230,207 @@ function updateTime() {
         minute: '2-digit',
         second: '2-digit'
     };
-    document.getElementById('currentTime').textContent = now.toLocaleDateString('id-ID', options);
+    const timeString = now.toLocaleDateString('id-ID', options);
+    document.getElementById('currentTime').textContent = timeString;
 }
 
 // Update time every second
 setInterval(updateTime, 1000);
 updateTime();
 
-// Camera variables
-let videoElement = document.getElementById('video');
-let canvasElement = document.getElementById('canvas');
-let captureBtn = document.getElementById('captureBtn');
-let retakeBtn = document.getElementById('retakeBtn');
-let detectPlateBtn = document.getElementById('detectPlateBtn');
-let submitBtn = document.getElementById('submitBtn');
-let stream = null;
-let photoTaken = false;
+// Initialize camera when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initCamera();
+    
+    // Display any Django messages as alerts
+    {% if messages %}
+    {% for message in messages %}
+    const alertContainer = document.createElement('div');
+    alertContainer.className = 'alert-container';
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-{{ message.tags }} alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    alertContainer.appendChild(alertDiv);
+    document.body.appendChild(alertContainer);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertContainer.remove(), 500);
+    }, 5000);
+    {% endfor %}
+    {% endif %}
+});
 
 // Initialize camera
-async function initCamera() {
-    try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
+function initCamera() {
+    const video = document.getElementById('video');
+    
+    // Check if browser supports getUserMedia
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ 
             video: { 
+                facingMode: 'environment',
                 width: { ideal: 1280 },
-                height: { ideal: 720 },
-                facingMode: 'environment' 
-            }, 
-            audio: false 
+                height: { ideal: 720 }
+            } 
+        })
+        .then(function(stream) {
+            video.srcObject = stream;
+            document.getElementById('submitBtn').disabled = false;
+        })
+        .catch(function(error) {
+            console.error("Camera error: ", error);
+            alert("Tidak dapat mengakses kamera: " + error.message);
         });
-        videoElement.srcObject = stream;
-        
-        console.log('Camera initialized successfully');
-    } catch (err) {
-        console.error('Error initializing camera:', err);
-        alert('Gagal mengakses kamera. Pastikan kamera Anda terhubung dan telah memberikan izin.');
+    } else {
+        alert("Browser Anda tidak mendukung penggunaan kamera.");
     }
 }
 
-// Initialize camera when page loads
-document.addEventListener('DOMContentLoaded', initCamera);
-
-// Capture image function
+// Capture image from video
 function captureImage() {
-    if (!stream) {
-        alert('Kamera belum siap. Tunggu sebentar.');
-        return;
-    }
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const detectPlateBtn = document.getElementById('detectPlateBtn');
     
-    // Set canvas dimensions to match video
-    canvasElement.width = videoElement.videoWidth;
-    canvasElement.height = videoElement.videoHeight;
+    // Set canvas size to match video dimensions
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     
     // Draw the video frame to the canvas
-    const context = canvasElement.getContext('2d');
-    context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+    const context = canvas.getContext('2d');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     // Convert canvas to image data URL
-    const imageDataUrl = canvasElement.toDataURL('image/jpeg', 0.9);
+    const imageDataUrl = canvas.toDataURL('image/jpeg');
     
-    // Display the captured image
-    videoElement.style.display = 'none';
-    canvasElement.style.display = 'block';
-    
-    // Store image data in form
+    // Set the image data as value of the hidden input
     document.getElementById('imageData').value = imageDataUrl;
     
-    // Update UI
+    // Display the captured image
+    video.style.display = 'none';
+    canvas.style.display = 'block';
+    
+    // Show/hide buttons
     captureBtn.style.display = 'none';
     retakeBtn.style.display = 'inline-block';
     detectPlateBtn.style.display = 'inline-block';
-    submitBtn.disabled = false;
     
-    photoTaken = true;
-    
-    console.log('Photo captured');
-    
-    // Automatically detect license plate
+    // Automatically attempt to detect the license plate
     detectLicensePlate(imageDataUrl);
 }
 
-// License plate detection
+// Detect license plate from image
 function detectLicensePlate(imageDataUrl) {
-    // Show detecting spinner
-    document.getElementById('plateDetectingSpinner').style.display = 'inline-block';
-    document.getElementById('detectPlateBtn').style.display = 'none';
+    const detectPlateBtn = document.getElementById('detectPlateBtn');
+    const plateDetectingSpinner = document.getElementById('plateDetectingSpinner');
     
-    // Convert data URL to blob
-    const byteString = atob(imageDataUrl.split(',')[1]);
-    const mimeString = imageDataUrl.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
+    // Show detecting indicator, hide detection button
+    detectPlateBtn.style.display = 'none';
+    plateDetectingSpinner.style.display = 'inline-block';
     
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-    }
-    
-    const blob = new Blob([ab], {type: mimeString});
-    
-    // Create FormData and append image
+    // Create a blob from the image data URL
+    const blob = dataURLToBlob(imageDataUrl);
     const formData = new FormData();
+    formData.append('plate_image', blob, 'plate_image.jpg');
     formData.append('detect_only', 'true');
-    formData.append('vehicle_image', blob, 'vehicle.jpg');
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     
-    // Get CSRF token
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    // Send to server for plate detection
+    // Send AJAX request to server for plate detection
     fetch('{% url "parking:vehicle_entry" %}', {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': csrfToken
-        }
+        credentials: 'same-origin'
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Detection failed');
+        }
+        return response.json();
+    })
     .then(data => {
-        // Hide detecting spinner
-        document.getElementById('plateDetectingSpinner').style.display = 'none';
-        document.getElementById('detectPlateBtn').style.display = 'inline-block';
-        
         if (data.plate_number) {
-            // Fill the license plate field
+            // Set the detected plate number in the input field
             document.getElementById('license_plate').value = data.plate_number;
-            console.log('Plate number detected:', data.plate_number);
+            
+            // Alert user about the detected plate
+            new bootstrap.Toast(document.getElementById('plateDetectedToast')).show();
         } else {
-            console.error('Plate detection failed:', data.error);
-            alert('Deteksi plat nomor gagal: ' + (data.error || 'Tidak dapat mendeteksi plat nomor'));
+            throw new Error('No plate detected');
         }
     })
     .catch(error => {
-        // Hide detecting spinner
-        document.getElementById('plateDetectingSpinner').style.display = 'none';
-        document.getElementById('detectPlateBtn').style.display = 'inline-block';
-        
         console.error('Error detecting plate:', error);
-        alert('Terjadi kesalahan saat mendeteksi plat nomor. Silakan coba lagi.');
+    })
+    .finally(() => {
+        // Hide spinner, show detection button
+        plateDetectingSpinner.style.display = 'none';
+        detectPlateBtn.style.display = 'inline-block';
     });
 }
 
-// Manual detection button click
-document.getElementById('detectPlateBtn').addEventListener('click', function() {
-    const imageDataUrl = document.getElementById('imageData').value;
-    if (imageDataUrl) {
-        detectLicensePlate(imageDataUrl);
-    } else {
-        alert('Harap ambil foto kendaraan terlebih dahulu.');
+// Convert data URL to Blob
+function dataURLToBlob(dataURL) {
+    const parts = dataURL.split(';base64,');
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+    
+    for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
     }
-});
+    
+    return new Blob([uInt8Array], { type: contentType });
+}
 
 // Retake photo
 function retakePhoto() {
-    // Show video stream again
-    videoElement.style.display = 'block';
-    canvasElement.style.display = 'none';
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const detectPlateBtn = document.getElementById('detectPlateBtn');
     
-    // Update UI
+    // Clear the image data
+    document.getElementById('imageData').value = '';
+    
+    // Show video, hide canvas
+    video.style.display = 'block';
+    canvas.style.display = 'none';
+    
+    // Show/hide buttons
     captureBtn.style.display = 'inline-block';
     retakeBtn.style.display = 'none';
     detectPlateBtn.style.display = 'none';
-    submitBtn.disabled = true;
     
-    // Clear image data
-    document.getElementById('imageData').value = '';
-    
-    photoTaken = false;
-    
-    console.log('Camera reset for new photo');
+    // Clear the license plate field
+    document.getElementById('license_plate').value = '';
 }
 
+// Print ticket function
 function printTicket() {
-    // Implement ticket printing logic here
     window.print();
 }
 
 // Form submission
 document.getElementById('entryForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    if (!photoTaken) {
-        alert('Harap ambil foto kendaraan terlebih dahulu.');
-        return;
+    // Auto-fill the current time if not already provided
+    const timeInput = document.getElementById('entry_time');
+    if (timeInput && !timeInput.value) {
+        const now = new Date();
+        const timeString = now.toISOString().slice(0, 16);
+        timeInput.value = timeString;
     }
-    
-    // Create form data for submission
-    const formData = new FormData(this);
-    
-    // Convert data URL to blob for sending
-    const imageDataUrl = document.getElementById('imageData').value;
-    if (imageDataUrl) {
-        // Convert base64 to blob
-        const byteString = atob(imageDataUrl.split(',')[1]);
-        const mimeString = imageDataUrl.split(',')[0].split(':')[1].split(';')[0];
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        
-        for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
-        
-        const blob = new Blob([ab], {type: mimeString});
-        formData.set('vehicle_image', blob, 'vehicle.jpg');
-    }
-    
-    // Get CSRF token
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    // Send data to server
-    fetch('{% url "parking:vehicle_entry" %}', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': csrfToken
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Show success modal
-            document.getElementById('ticketNumber').textContent = data.parking_id;
-            document.getElementById('entryTime').textContent = new Date().toLocaleString('id-ID');
-            
-            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-            successModal.show();
-            
-            // Reset form and camera
-            document.getElementById('entryForm').reset();
-            retakePhoto();
-        } else {
-            alert('Error: ' + (data.error || 'Terjadi kesalahan saat memproses data.'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat mengirim data. Silakan coba lagi.');
-    });
 });
 </script>
 {% endblock %}
