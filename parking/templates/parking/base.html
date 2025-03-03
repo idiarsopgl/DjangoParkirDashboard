@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,27 +16,34 @@
             background-color: #343a40;
             padding-top: 20px;
         }
+
         .sidebar .nav-link {
             color: #fff;
             padding: 10px 20px;
         }
+
         .sidebar .nav-link:hover {
             background-color: #495057;
         }
+
         .sidebar .nav-link.active {
             background-color: #0d6efd;
         }
+
         .sidebar .nav-link i {
             margin-right: 10px;
         }
+
         .content {
             padding: 20px;
         }
+
         .navbar-brand {
             padding-left: 20px;
         }
     </style>
 </head>
+
 <body>
     <div class="container-fluid">
         <div class="row">
@@ -47,64 +55,80 @@
                     </div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'parking:dashboard' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                                href="{% url 'parking:dashboard' %}">
                                 <i class="fas fa-tachometer-alt"></i> Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'vehicle_entry' %}active{% endif %}" href="{% url 'parking:vehicle_entry' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'vehicle_entry' %}active{% endif %}"
+                                href="{% url 'parking:vehicle_entry' %}">
                                 <i class="fas fa-car"></i> Kendaraan Masuk
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'vehicle_exit' %}active{% endif %}" href="{% url 'parking:vehicle_exit' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'vehicle_exit' %}active{% endif %}"
+                                href="{% url 'parking:vehicle_exit' %}">
                                 <i class="fas fa-sign-out-alt"></i> Kendaraan Keluar
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}" href="{% url 'parking:history' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}"
+                                href="{% url 'parking:history' %}">
                                 <i class="fas fa-history"></i> Riwayat
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}" href="{% url 'parking:reports' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}"
+                                href="{% url 'parking:reports' %}">
                                 <i class="fas fa-file-alt"></i> Laporan
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}" href="{% url 'parking:analytics' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}"
+                                href="{% url 'parking:analytics' %}">
                                 <i class="fas fa-chart-bar"></i> Analisis
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'manage_slots' %}active{% endif %}" href="{% url 'parking:manage_slots' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'manage_slots' %}active{% endif %}"
+                                href="{% url 'parking:manage_slots' %}">
                                 <i class="fas fa-parking"></i> Kelola Slot
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'manage_operators' %}active{% endif %}" href="{% url 'parking:manage_operators' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'manage_operators' %}active{% endif %}"
+                                href="{% url 'parking:manage_operators' %}">
                                 <i class="fas fa-users"></i> Kelola Operator
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'manage_shifts' %}active{% endif %}" href="{% url 'parking:manage_shifts' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'manage_shifts' %}active{% endif %}"
+                                href="{% url 'parking:manage_shifts' %}">
                                 <i class="fas fa-clock"></i> Kelola Shift
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'manage_rates' %}active{% endif %}" href="{% url 'parking:manage_rates' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'manage_rates' %}active{% endif %}"
+                                href="{% url 'parking:manage_rates' %}">
                                 <i class="fas fa-money-bill"></i> Tarif Parkir
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" href="{% url 'parking:settings' %}">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}"
+                                href="{% url 'parking:settings' %}">
                                 <i class="fas fa-cog"></i> Pengaturan
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'admin:logout' %}">
-                                <i class="fas fa-sign-out-alt"></i> Keluar
-                            </a>
+                            <form method="post" action="{% url 'admin:logout' %}" id="admin-logout-form"
+                                style="display: inline;">
+                                {% csrf_token %}
+                                <a class="nav-link" href="javascript:void(0);"
+                                    onclick="document.getElementById('admin-logout-form').submit();">
+                                    <i class="fas fa-sign-out-alt"></i> Keluar
+                                </a>
+                            </form>
                         </li>
                     </ul>
                 </div>
@@ -116,14 +140,16 @@
                 <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
                     <div class="container-fluid">
                         <a class="navbar-brand" href="{% url 'parking:dashboard' %}">Sistem Manajemen Parkir</a>
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarNav">
                             <span class="navbar-toggler-icon"></span>
                         </button>
                         <div class="collapse navbar-collapse" id="navbarNav">
                             <ul class="navbar-nav ms-auto">
                                 {% if user.is_authenticated %}
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                                        data-bs-toggle="dropdown">
                                         <i class="fas fa-user"></i> {{ user.username }}
                                     </a>
                                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
@@ -131,14 +157,20 @@
                                             <i class="fas fa-key me-2"></i>Ganti Password
                                         </a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" href="{% url 'logout' %}">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Keluar
-                                        </a>
+                                        <form method="post" action="{% url 'logout' %}" id="logout-form"
+                                            style="display: inline;">
+                                            {% csrf_token %}
+                                            <a class="dropdown-item" href="javascript:void(0);"
+                                                onclick="document.getElementById('logout-form').submit();">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Keluar
+                                            </a>
+                                        </form>
                                     </div>
                                 </li>
                                 {% else %}
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'admin:login' %}"><i class="fas fa-sign-in-alt"></i> Masuk</a>
+                                    <a class="nav-link" href="{% url 'admin:login' %}"><i
+                                            class="fas fa-sign-in-alt"></i> Masuk</a>
                                 </li>
                                 {% endif %}
                             </ul>
@@ -170,4 +202,5 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

@@ -23,7 +23,8 @@
                             <button class="btn btn-primary btn-lg" id="captureBtn" onclick="captureImage()">
                                 <i class="fas fa-camera"></i> Ambil Foto
                             </button>
-                            <button class="btn btn-secondary btn-lg ml-2" id="retakeBtn" style="display: none;" onclick="retakePhoto()">
+                            <button class="btn btn-secondary btn-lg ml-2" id="retakeBtn" style="display: none;"
+                                onclick="retakePhoto()">
                                 <i class="fas fa-redo"></i> Ambil Ulang
                             </button>
                         </div>
@@ -43,10 +44,10 @@
                 <div class="card-body">
                     <form id="entryForm" method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
                         <!-- Hidden field for image data -->
                         <input type="hidden" id="imageData" name="plate_image">
-                        
+
                         <!-- Vehicle Type -->
                         <div class="mb-3">
                             <label class="form-label"><i class="fas fa-car-side"></i> Jenis Kendaraan</label>
@@ -62,9 +63,10 @@
                         <div class="mb-3">
                             <label class="form-label"><i class="fas fa-id-card"></i> Plat Nomor</label>
                             <div class="input-group">
-                                <input type="text" class="form-control form-control-lg" id="license_plate" name="plate_number" 
-                                       placeholder="Contoh: B 1234 ABC" required>
-                                <button class="btn btn-outline-secondary" type="button" id="detectPlateBtn" style="display: none;">
+                                <input type="text" class="form-control form-control-lg" id="license_plate"
+                                    name="plate_number" placeholder="Contoh: B 1234 ABC" required>
+                                <button class="btn btn-outline-secondary" type="button" id="detectPlateBtn"
+                                    style="display: none;">
                                     <i class="fas fa-magic"></i> Deteksi
                                 </button>
                                 <span class="input-group-text" id="plateDetectingSpinner" style="display: none;">
@@ -76,15 +78,15 @@
                         <!-- Vehicle Color -->
                         <div class="mb-3">
                             <label class="form-label"><i class="fas fa-palette"></i> Warna Kendaraan</label>
-                            <input type="text" class="form-control form-control-lg" name="color" 
-                                   placeholder="Contoh: Hitam" required>
+                            <input type="text" class="form-control form-control-lg" name="color"
+                                placeholder="Contoh: Hitam" required>
                         </div>
 
                         <!-- Notes -->
                         <div class="mb-3">
                             <label class="form-label"><i class="fas fa-sticky-note"></i> Catatan</label>
-                            <textarea class="form-control" name="notes" rows="2" 
-                                    placeholder="Catatan tambahan (opsional)"></textarea>
+                            <textarea class="form-control" name="notes" rows="2"
+                                placeholder="Catatan tambahan (opsional)"></textarea>
                         </div>
 
                         <!-- Current Time -->
@@ -169,268 +171,368 @@
         </div>
     </div>
 </div>
+
+<!-- Plate Detection Success Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="plateDetectedToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"
+        data-bs-delay="3000">
+        <div class="toast-header bg-success text-white">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong class="me-auto">Deteksi Berhasil</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Plat nomor berhasil terdeteksi!
+        </div>
+    </div>
+</div>
+
+<!-- Plate Detection Error Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="plateErrorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+        <div class="toast-header bg-danger text-white">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong class="me-auto">Deteksi Gagal</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Gagal mendeteksi plat nomor. Silakan input manual.
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-.camera-preview {
-    width: 100%;
-    height: 480px;
-    background-color: #f8f9fa;
-    border: 2px solid #dee2e6;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    overflow: hidden;
-    position: relative;
-}
+    .camera-preview {
+        width: 100%;
+        height: 480px;
+        background-color: #f8f9fa;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        overflow: hidden;
+        position: relative;
+    }
 
-.camera-container {
-    padding: 20px;
-}
+    .camera-container {
+        padding: 20px;
+    }
 
-.form-control-lg, .form-select-lg {
-    font-size: 1.1rem;
-}
+    .form-control-lg,
+    .form-select-lg {
+        font-size: 1.1rem;
+    }
 
-.card {
-    border-radius: 10px;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
 
-.card-header {
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-}
+    .card-header {
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+    }
 
-.btn-lg {
-    padding: 12px 24px;
-    font-size: 1.1rem;
-}
+    .btn-lg {
+        padding: 12px 24px;
+        font-size: 1.1rem;
+    }
 
-.ml-2 {
-    margin-left: 0.5rem;
-}
+    .ml-2 {
+        margin-left: 0.5rem;
+    }
+
+    /* Shake animation for failed detection */
+    .shake-animation {
+        animation: shake 0.82s cubic-bezier(.36, .07, .19, .97) both;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        perspective: 1000px;
+    }
+
+    @keyframes shake {
+
+        10%,
+        90% {
+            transform: translate3d(-1px, 0, 0);
+        }
+
+        20%,
+        80% {
+            transform: translate3d(2px, 0, 0);
+        }
+
+        30%,
+        50%,
+        70% {
+            transform: translate3d(-4px, 0, 0);
+        }
+
+        40%,
+        60% {
+            transform: translate3d(4px, 0, 0);
+        }
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Update current time display
-function updateTime() {
-    const now = new Date();
-    const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    };
-    const timeString = now.toLocaleDateString('id-ID', options);
-    document.getElementById('currentTime').textContent = timeString;
-}
+    // Update current time display
+    function updateTime() {
+        const now = new Date();
+        const options = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+        const timeString = now.toLocaleDateString('id-ID', options);
+        document.getElementById('currentTime').textContent = timeString;
+    }
 
-// Update time every second
-setInterval(updateTime, 1000);
-updateTime();
+    // Update time every second
+    setInterval(updateTime, 1000);
+    updateTime();
 
-// Initialize camera when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    initCamera();
-    
-    // Display any Django messages as alerts
-    {% if messages %}
-    {% for message in messages %}
-    const alertContainer = document.createElement('div');
-    alertContainer.className = 'alert-container';
-    
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-{{ message.tags }} alert-dismissible fade show';
-    alertDiv.role = 'alert';
-    alertDiv.innerHTML = `
+    // Initialize camera when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function () {
+        initCamera();
+
+        // Display any Django messages as alerts
+        {% if messages %}
+        {% for message in messages %}
+        const alertContainer = document.createElement('div');
+        alertContainer.className = 'alert-container';
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-{{ message.tags }} alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
         {{ message }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
-    
-    alertContainer.appendChild(alertDiv);
-    document.body.appendChild(alertContainer);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        alertDiv.classList.remove('show');
-        setTimeout(() => alertContainer.remove(), 500);
-    }, 5000);
-    {% endfor %}
-    {% endif %}
-});
 
-// Initialize camera
-function initCamera() {
-    const video = document.getElementById('video');
-    
-    // Check if browser supports getUserMedia
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: 'environment',
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            } 
-        })
-        .then(function(stream) {
-            video.srcObject = stream;
-            document.getElementById('submitBtn').disabled = false;
-        })
-        .catch(function(error) {
-            console.error("Camera error: ", error);
-            alert("Tidak dapat mengakses kamera: " + error.message);
-        });
-    } else {
-        alert("Browser Anda tidak mendukung penggunaan kamera.");
-    }
-}
+        alertContainer.appendChild(alertDiv);
+        document.body.appendChild(alertContainer);
 
-// Capture image from video
-function captureImage() {
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('captureBtn');
-    const retakeBtn = document.getElementById('retakeBtn');
-    const detectPlateBtn = document.getElementById('detectPlateBtn');
-    
-    // Set canvas size to match video dimensions
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    // Draw the video frame to the canvas
-    const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Convert canvas to image data URL
-    const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-    // Set the image data as value of the hidden input
-    document.getElementById('imageData').value = imageDataUrl;
-    
-    // Display the captured image
-    video.style.display = 'none';
-    canvas.style.display = 'block';
-    
-    // Show/hide buttons
-    captureBtn.style.display = 'none';
-    retakeBtn.style.display = 'inline-block';
-    detectPlateBtn.style.display = 'inline-block';
-    
-    // Automatically attempt to detect the license plate
-    detectLicensePlate(imageDataUrl);
-}
-
-// Detect license plate from image
-function detectLicensePlate(imageDataUrl) {
-    const detectPlateBtn = document.getElementById('detectPlateBtn');
-    const plateDetectingSpinner = document.getElementById('plateDetectingSpinner');
-    
-    // Show detecting indicator, hide detection button
-    detectPlateBtn.style.display = 'none';
-    plateDetectingSpinner.style.display = 'inline-block';
-    
-    // Create a blob from the image data URL
-    const blob = dataURLToBlob(imageDataUrl);
-    const formData = new FormData();
-    formData.append('plate_image', blob, 'plate_image.jpg');
-    formData.append('detect_only', 'true');
-    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-    
-    // Send AJAX request to server for plate detection
-    fetch('{% url "parking:vehicle_entry" %}', {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin'
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Detection failed');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.plate_number) {
-            // Set the detected plate number in the input field
-            document.getElementById('license_plate').value = data.plate_number;
-            
-            // Alert user about the detected plate
-            new bootstrap.Toast(document.getElementById('plateDetectedToast')).show();
-        } else {
-            throw new Error('No plate detected');
-        }
-    })
-    .catch(error => {
-        console.error('Error detecting plate:', error);
-    })
-    .finally(() => {
-        // Hide spinner, show detection button
-        plateDetectingSpinner.style.display = 'none';
-        detectPlateBtn.style.display = 'inline-block';
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertContainer.remove(), 500);
+        }, 5000);
+        {% endfor %}
+        {% endif %}
     });
-}
 
-// Convert data URL to Blob
-function dataURLToBlob(dataURL) {
-    const parts = dataURL.split(';base64,');
-    const contentType = parts[0].split(':')[1];
-    const raw = window.atob(parts[1]);
-    const rawLength = raw.length;
-    const uInt8Array = new Uint8Array(rawLength);
-    
-    for (let i = 0; i < rawLength; ++i) {
-        uInt8Array[i] = raw.charCodeAt(i);
+    // Initialize camera
+    function initCamera() {
+        const video = document.getElementById('video');
+
+        // Check if browser supports getUserMedia
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                    document.getElementById('submitBtn').disabled = false;
+                })
+                .catch(function (error) {
+                    console.error("Camera error: ", error);
+                    alert("Tidak dapat mengakses kamera: " + error.message);
+                });
+        } else {
+            alert("Browser Anda tidak mendukung penggunaan kamera.");
+        }
     }
-    
-    return new Blob([uInt8Array], { type: contentType });
-}
 
-// Retake photo
-function retakePhoto() {
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('captureBtn');
-    const retakeBtn = document.getElementById('retakeBtn');
-    const detectPlateBtn = document.getElementById('detectPlateBtn');
-    
-    // Clear the image data
-    document.getElementById('imageData').value = '';
-    
-    // Show video, hide canvas
-    video.style.display = 'block';
-    canvas.style.display = 'none';
-    
-    // Show/hide buttons
-    captureBtn.style.display = 'inline-block';
-    retakeBtn.style.display = 'none';
-    detectPlateBtn.style.display = 'none';
-    
-    // Clear the license plate field
-    document.getElementById('license_plate').value = '';
-}
+    // Capture image from video
+    function captureImage() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const detectPlateBtn = document.getElementById('detectPlateBtn');
 
-// Print ticket function
-function printTicket() {
-    window.print();
-}
+        // Set canvas size to match video dimensions
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-// Form submission
-document.getElementById('entryForm').addEventListener('submit', function(e) {
-    // Auto-fill the current time if not already provided
-    const timeInput = document.getElementById('entry_time');
-    if (timeInput && !timeInput.value) {
-        const now = new Date();
-        const timeString = now.toISOString().slice(0, 16);
-        timeInput.value = timeString;
+        // Draw the video frame to the canvas
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert canvas to image data URL
+        const imageDataUrl = canvas.toDataURL('image/jpeg');
+
+        // Set the image data as value of the hidden input
+        document.getElementById('imageData').value = imageDataUrl;
+
+        // Display the captured image
+        video.style.display = 'none';
+        canvas.style.display = 'block';
+
+        // Show/hide buttons
+        captureBtn.style.display = 'none';
+        retakeBtn.style.display = 'inline-block';
+        detectPlateBtn.style.display = 'inline-block';
+
+        // Automatically attempt to detect the license plate
+        detectLicensePlate(imageDataUrl);
     }
-});
+
+    // Detect license plate from image
+    function detectLicensePlate(imageDataUrl) {
+        const detectPlateBtn = document.getElementById('detectPlateBtn');
+        const plateDetectingSpinner = document.getElementById('plateDetectingSpinner');
+        const licenseInput = document.getElementById('license_plate');
+
+        // Show detecting indicator, hide detection button
+        detectPlateBtn.style.display = 'none';
+        plateDetectingSpinner.style.display = 'inline-block';
+
+        // Create a blob from the image data URL
+        const blob = dataURLToBlob(imageDataUrl);
+        const formData = new FormData();
+        formData.append('plate_image', blob, 'plate_image.jpg');
+        formData.append('detect_only', 'true');
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        // Add a timeout to prevent hanging if the server takes too long
+        const controller = new AbortController();
+        const timeoutId = setTimeout(function () {
+            controller.abort();
+        }, 15000); // 15 second timeout
+
+        // Send AJAX request to server for plate detection
+        fetch('{% url "parking:vehicle_entry" %}', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            signal: controller.signal
+        })
+            .then(response => {
+                clearTimeout(timeoutId);
+                if (!response.ok) {
+                    if (response.headers.get('content-type') && response.headers.get('content-type').includes('application/json')) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Deteksi gagal');
+                        });
+                    } else {
+                        // Handle non-JSON response (like HTML error pages)
+                        throw new Error('Server error: ' + response.status);
+                    }
+                }
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server tidak mengembalikan format JSON yang valid');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.plate_number) {
+                    // Set the detected plate number in the input field
+                    licenseInput.value = data.plate_number;
+
+                    // Change background to indicate success
+                    licenseInput.style.backgroundColor = '#e8f0fe';
+                    setTimeout(function () {
+                        licenseInput.style.backgroundColor = '';
+                    }, 2000);
+
+                    // Alert user about the detected plate
+                    new bootstrap.Toast(document.getElementById('plateDetectedToast')).show();
+                } else {
+                    throw new Error('Tidak ada plat terdeteksi');
+                }
+            })
+            .catch(error => {
+                console.error('Error detecting plate:', error);
+                // Show error toast
+                const errorToast = document.getElementById('plateErrorToast');
+                const errorMessage = errorToast.querySelector('.toast-body');
+                errorMessage.textContent = `Gagal mendeteksi plat: ${error.message}. Silakan input manual.`;
+                new bootstrap.Toast(errorToast).show();
+
+                // Shake the input to indicate it needs manual input
+                licenseInput.classList.add('shake-animation');
+                setTimeout(function () {
+                    licenseInput.classList.remove('shake-animation');
+                }, 800);
+            })
+            .finally(() => {
+                // Hide spinner, show detection button
+                plateDetectingSpinner.style.display = 'none';
+                detectPlateBtn.style.display = 'inline-block';
+            });
+    }
+
+    // Convert data URL to Blob
+    function dataURLToBlob(dataURL) {
+        const parts = dataURL.split(';base64,');
+        const contentType = parts[0].split(':')[1];
+        const raw = window.atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+
+        for (let i = 0; i < rawLength; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+
+        return new Blob([uInt8Array], { type: contentType });
+    }
+
+    // Retake photo
+    function retakePhoto() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const detectPlateBtn = document.getElementById('detectPlateBtn');
+
+        // Clear the image data
+        document.getElementById('imageData').value = '';
+
+        // Show video, hide canvas
+        video.style.display = 'block';
+        canvas.style.display = 'none';
+
+        // Show/hide buttons
+        captureBtn.style.display = 'inline-block';
+        retakeBtn.style.display = 'none';
+        detectPlateBtn.style.display = 'none';
+
+        // Clear the license plate field
+        document.getElementById('license_plate').value = '';
+    }
+
+    // Print ticket function
+    function printTicket() {
+        window.print();
+    }
+
+    // Form submission
+    document.getElementById('entryForm').addEventListener('submit', function (e) {
+        // Auto-fill the current time if not already provided
+        const timeInput = document.getElementById('entry_time');
+        if (timeInput && !timeInput.value) {
+            const now = new Date();
+            const timeString = now.toISOString().slice(0, 16);
+            timeInput.value = timeString;
+        }
+    });
 </script>
 {% endblock %}

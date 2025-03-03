@@ -3,6 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.contrib import messages
+from django.conf import settings as django_settings  # Rename import to avoid conflict
+from django.db.models import Sum, Q, F, Count, Avg
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import logout
 from .models import Vehicle, ParkingRecord, ParkingSlot, ParkingOperator, Shift, ShiftLog, ParkingRate, Language, BackupHistory, VehicleEntry
 from .anpr import ANPR
 from .forms import VehicleEntryForm
@@ -13,13 +17,17 @@ import os
 import cv2
 import numpy as np
 import qrcode
+import uuid
+import logging
 from datetime import timedelta, datetime
-from django.db.models import Sum, Q, F, Count, Avg
 from collections import defaultdict
-from django.contrib.auth import logout
-from django.conf import settings
 
+# Setup instances
 anpr_system = ANPR()
+logger = logging.getLogger(__name__)
+
+# Ensure temp directory exists
+os.makedirs(os.path.join(django_settings.MEDIA_ROOT, 'temp'), exist_ok=True)
 
 @login_required
 def dashboard(request):
@@ -138,79 +146,93 @@ def dashboard(request):
     
     return render(request, 'parking/dashboard.html', context)
 
+@csrf_exempt
 @login_required
 def vehicle_entry(request):
     """
     View for recording vehicle entry into the parking area.
     """
-    form = VehicleEntryForm()
-    
     if request.method == 'POST':
-        # Check if this is a plate detection request
-        detect_only = request.POST.get('detect_only', False)
-        
-        if 'plate_image' in request.FILES:
-            plate_image = request.FILES['plate_image']
-            
-            # Save the temporary image
-            img_path = os.path.join(settings.MEDIA_ROOT, 'temp', f"plate_{int(time.time())}.jpg")
-            os.makedirs(os.path.dirname(img_path), exist_ok=True)
-            
-            with open(img_path, 'wb+') as destination:
-                for chunk in plate_image.chunks():
-                    destination.write(chunk)
-            
-            # Process the image for license plate detection
+        if 'detect_only' in request.POST:
+            # AJAX request for license plate detection
             try:
+                if 'plate_image' not in request.FILES:
+                    return JsonResponse({'error': 'Tidak ada gambar yang dikirim'}, status=400)
+                
+                plate_image = request.FILES['plate_image']
+                
+                # Save image temporarily
+                temp_dir = os.path.join(django_settings.MEDIA_ROOT, 'temp')
+                os.makedirs(temp_dir, exist_ok=True)
+                
+                temp_img_path = os.path.join(temp_dir, f"plate_{uuid.uuid4().hex}.jpg")
+                with open(temp_img_path, 'wb+') as destination:
+                    for chunk in plate_image.chunks():
+                        destination.write(chunk)
+                
+                # Try to detect plate using ANPR
                 anpr = ANPR()
-                plate_number = anpr.detect_plate(img_path)
-                
-                # If we cannot detect the plate, try hardcoded pattern recognition
-                # This is a temporary solution for specific problematic plates
-                if not plate_number and ('R2137ML' in img_path or detect_recognize_pattern(img_path)):
-                    plate_number = 'R2137ML'
-                
-                if detect_only:
+                try:
+                    plate_number = anpr.detect_plate(temp_img_path)
+                    
+                    # Log detection result
+                    logger.info(f"Plate detection result: {plate_number}")
+                    
                     if plate_number:
                         return JsonResponse({'plate_number': plate_number})
                     else:
-                        return JsonResponse({'error': 'Could not detect plate number'}, status=400)
+                        # Try Indonesian plate pattern recognition as fallback
+                        plate_number = anpr.recognize_indo_plate_pattern(temp_img_path)
+                        if plate_number:
+                            return JsonResponse({'plate_number': plate_number})
+                        return JsonResponse({'error': 'Plat nomor tidak terdeteksi'}, status=400)
+                        
+                except Exception as e:
+                    logger.error(f"Error in plate detection: {str(e)}")
+                    return JsonResponse({'error': f'Error deteksi: {str(e)}'}, status=500)
+                finally:
+                    # Clean up temporary file
+                    try:
+                        os.remove(temp_img_path)
+                    except:
+                        pass
+                        
             except Exception as e:
-                print(f"Error in plate detection: {str(e)}")
-                if detect_only:
-                    return JsonResponse({'error': str(e)}, status=500)
-        
-        # Process the complete form submission
-        form = VehicleEntryForm(request.POST)
-        if form.is_valid():
-            vehicle_entry = form.save(commit=False)
-            vehicle_entry.entry_time = timezone.now()
-            vehicle_entry.save()
-            
-            # Generate and save QR code
-            qr_data = f"VehicleEntry:{vehicle_entry.id}"
-            qr_image = generate_qr_code(qr_data)
-            
-            # Save QR code image
-            qr_path = f"qr_codes/entry_{vehicle_entry.id}.png"
-            full_path = os.path.join(settings.MEDIA_ROOT, qr_path)
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            qr_image.save(full_path)
-            
-            # Update vehicle entry with QR code path
-            vehicle_entry.qr_code = qr_path
-            vehicle_entry.save()
-            
-            messages.success(request, f"Kendaraan dengan plat nomor {vehicle_entry.plate_number} berhasil dicatat!")
-            return redirect('parking:dashboard')
+                logger.error(f"Error processing image: {str(e)}")
+                return JsonResponse({'error': f'Error memproses gambar: {str(e)}'}, status=500)
         else:
-            messages.error(request, "Terjadi kesalahan dalam form. Silakan periksa kembali.")
+            # Regular form submission
+            form = VehicleEntryForm(request.POST)
+            if form.is_valid():
+                vehicle_entry = form.save(commit=False)
+                vehicle_entry.entry_time = timezone.now()
+                vehicle_entry.save()
+                
+                # Generate and save QR code
+                qr_data = f"VehicleEntry:{vehicle_entry.id}"
+                qr_image = generate_qr_code(qr_data)
+                
+                # Save QR code image
+                qr_path = f"qr_codes/entry_{vehicle_entry.id}.png"
+                full_path = os.path.join(django_settings.MEDIA_ROOT, qr_path)
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                qr_image.save(full_path)
+                
+                # Update vehicle entry with QR code path
+                vehicle_entry.qr_code = qr_path
+                vehicle_entry.save()
+                
+                messages.success(request, f"Kendaraan dengan plat nomor {vehicle_entry.plate_number} berhasil dicatat!")
+                return redirect('parking:dashboard')
+            else:
+                messages.error(request, "Terjadi kesalahan dalam form. Silakan periksa kembali.")
+    else:
+        form = VehicleEntryForm()
     
     context = {
         'form': form,
-        'title': 'Kendaraan Masuk'
+        'title': 'Entry Kendaraan'
     }
-    
     return render(request, 'parking/vehicle_entry.html', context)
 
 def detect_recognize_pattern(image_path):
@@ -249,7 +271,7 @@ def detect_recognize_pattern(image_path):
             cv2.drawContours(debug_img, filtered_contours, -1, (0, 255, 0), 2)
             
             # Save debug image
-            debug_path = os.path.join(settings.MEDIA_ROOT, 'debug', os.path.basename(image_path))
+            debug_path = os.path.join(django_settings.MEDIA_ROOT, 'debug', os.path.basename(image_path))
             os.makedirs(os.path.dirname(debug_path), exist_ok=True)
             cv2.imwrite(debug_path, debug_img)
             
@@ -698,7 +720,7 @@ def manage_rates(request):
     return render(request, 'parking/manage_rates.html', {'rates': rates})
 
 @login_required
-def settings(request):
+def app_settings(request):
     """View for system settings."""
     languages = Language.objects.all()
     backup_history = BackupHistory.objects.all().order_by('-created_at')[:10]
@@ -871,10 +893,9 @@ def settings_api(request, action):
         elif action == 'backup':
             from django.core import management
             import os
-            from django.conf import settings
             
             # Create backup directory if it doesn't exist
-            backup_dir = os.path.join(settings.BASE_DIR, 'backups')
+            backup_dir = os.path.join(django_settings.BASE_DIR, 'backups')
             os.makedirs(backup_dir, exist_ok=True)
             
             # Generate backup name with timestamp

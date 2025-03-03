@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.core import management
 import os
 import json
@@ -36,38 +36,47 @@ class Command(BaseCommand):
 
     def perform_backup(self, backup_path=None):
         # Create backup directory if it doesn't exist
+        backup_dir = os.path.join(django_settings.BASE_DIR, 'backups')
+        os.makedirs(backup_dir, exist_ok=True)
+
+        # Generate backup filename with timestamp
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_filename = f'backup_{timestamp}.zip'
+        
+        # Use provided path or create one in the backup directory
         if not backup_path:
-            backup_dir = os.path.join(settings.BASE_DIR, 'backups')
-            os.makedirs(backup_dir, exist_ok=True)
-            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            backup_path = os.path.join(backup_dir, f'backup_{timestamp}')
+            backup_path = os.path.join(backup_dir, backup_filename)
         
-        os.makedirs(backup_path, exist_ok=True)
-
-        # Backup database
-        db_file = settings.DATABASES['default']['NAME']
-        backup_db = os.path.join(backup_path, 'db.sqlite3')
+        # Get database file path (assuming SQLite)
+        db_file = django_settings.DATABASES['default']['NAME']
         
-        # Create a copy of the database
-        shutil.copy2(db_file, backup_db)
-
-        # Backup media files if they exist
-        media_dir = os.path.join(settings.BASE_DIR, 'media')
+        # Create temporary directory for backup files
+        temp_dir = os.path.join(backup_dir, 'temp')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Copy media files
+        media_dir = os.path.join(django_settings.BASE_DIR, 'media')
         if os.path.exists(media_dir):
-            backup_media = os.path.join(backup_path, 'media')
-            if os.path.exists(backup_media):
-                shutil.rmtree(backup_media)
-            shutil.copytree(media_dir, backup_media)
-
+            shutil.copytree(media_dir, os.path.join(temp_dir, 'media'))
+        
+        # Export database data
+        management.call_command('dumpdata', exclude=['contenttypes', 'auth.permission'], output=os.path.join(temp_dir, 'db.json'))
+        
         # Create metadata file
         metadata = {
-            'timestamp': datetime.datetime.now().isoformat(),
-            'django_version': settings.DJANGO_VERSION,
-            'backup_type': 'full',
+            'timestamp': timestamp,
+            'django_version': django_settings.DJANGO_VERSION,
+            'backup_format_version': '1.0'
         }
         
-        with open(os.path.join(backup_path, 'metadata.json'), 'w') as f:
+        with open(os.path.join(temp_dir, 'metadata.json'), 'w') as f:
             json.dump(metadata, f, indent=2)
+
+        # Zip the backup files
+        shutil.make_archive(backup_path, 'zip', temp_dir)
+
+        # Clean up temporary files
+        shutil.rmtree(temp_dir)
 
         self.stdout.write(
             self.style.SUCCESS(f'Successfully created backup at {backup_path}')
@@ -86,7 +95,7 @@ class Command(BaseCommand):
             metadata = json.load(f)
 
         # Close all database connections
-        db_file = settings.DATABASES['default']['NAME']
+        db_file = django_settings.DATABASES['default']['NAME']
         
         # Restore database
         backup_db = os.path.join(backup_path, 'db.sqlite3')
@@ -101,7 +110,7 @@ class Command(BaseCommand):
         # Restore media files
         backup_media = os.path.join(backup_path, 'media')
         if os.path.exists(backup_media):
-            media_dir = os.path.join(settings.BASE_DIR, 'media')
+            media_dir = os.path.join(django_settings.BASE_DIR, 'media')
             if os.path.exists(media_dir):
                 shutil.rmtree(media_dir)
             shutil.copytree(backup_media, media_dir)

@@ -15,7 +15,7 @@ urlpatterns = [
     path('manage_operators/', views.manage_operators, name='manage_operators'),
     path('manage_shifts/', views.manage_shifts, name='manage_shifts'),
     path('manage_rates/', views.manage_rates, name='manage_rates'),
-    path('settings/', views.settings, name='settings'),
+    path('settings/', views.app_settings, name='settings'),
     path('logout/', views.logout_view, name='logout'),
     
     # API endpoints
