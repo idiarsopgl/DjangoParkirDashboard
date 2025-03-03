@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+env/
 build/
 develop-eggs/
 dist/
@@ -15,7 +16,6 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -25,13 +25,13 @@ wheels/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
+media
+staticfiles/
 
 # Virtual Environment
+myenv/
 venv/
 ENV/
-env/
-.env
 
 # IDE
 .idea/
@@ -42,6 +42,13 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Backup
+*.bak
 
 # Veltrix Template
 Veltrix_Django_v5.0.0/

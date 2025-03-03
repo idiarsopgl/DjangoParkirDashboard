@@ -26,7 +26,10 @@ SECRET_KEY = 'django-insecure-q9yni!*pe%tdsz$(9=j%v&8nqf3!v&^dw988wr1hvyj^ui#%a0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['parkir.app.sijasmkn1punggelan.org', 'localhost', '127.0.0.1', '176.100.39.202']
+
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = ['http://176.100.39.202:5700', 'https://176.100.39.202:5700']
 
 
 # Application definition
