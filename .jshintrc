@@ -1,0 +1,18 @@
+{
+  "esversion": 6,
+  "browser": true,
+  "jquery": true,
+  "devel": true,
+  "globals": {
+    "Chart": false,
+    "moment": false
+  },
+  "-W032": true,
+  "-W033": true,
+  "-W014": true,
+  "-W084": true,
+  "ignoreDelimiters": [
+    { "start": "{%", "end": "%}" },
+    { "start": "{{", "end": "}}" }
+  ]
+} 

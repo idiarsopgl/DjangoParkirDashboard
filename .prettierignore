@@ -1,0 +1,14 @@
+# Ignore Django template files
+**/templates/**/*.html
+
+# Ignore static files
+static/
+staticfiles/
+media/
+
+# Ignore virtual environment
+.venv/
+
+# Ignore build files
+*.min.js
+*.min.css 
